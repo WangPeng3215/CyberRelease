@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAppStore } from '@/store/app'
 
 const appStore = useAppStore()
@@ -36,6 +36,15 @@ function getRarityColor(rarity) {
     default: return 'border-gray-500 text-gray-300'
   }
 }
+
+function getImageSize(size) {
+  switch(size) {
+    case 'large': return 'h-48 object-contain'
+    case 'medium': return 'h-32 object-contain'
+    case 'small': return 'h-24 object-contain'
+    default: return 'h-32 object-contain'
+  }
+}
 </script>
 
 <template>
@@ -59,7 +68,10 @@ function getRarityColor(rarity) {
                    ? 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(22,119,255,0.4)]' 
                    : 'border-border bg-gray-800/50 hover:border-highlight'
                ]">
-            <div class="text-5xl text-center mb-3">{{ fish.emoji }}</div>
+            <div class="flex justify-center items-center mb-3 min-h-[80px]">
+              <img v-if="fish.image" :src="fish.image" :alt="fish.name" :class="getImageSize(fish.imageSize)" />
+              <span v-else class="text-5xl">{{ fish.emoji }}</span>
+            </div>
             <div class="text-white font-bold text-center">{{ fish.name }}</div>
             <div :class="['text-center text-sm mt-1', getRarityColor(fish.rarity)]">{{ fish.rarity }}</div>
             <div class="text-gray-400 text-xs text-center mt-2">功德 +{{ fish.merit }}</div>
