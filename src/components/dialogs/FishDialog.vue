@@ -39,7 +39,7 @@ function getRarityColor(rarity) {
 </script>
 
 <template>
-  <div v-if="appStore.showFishDialog" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+  <div v-if="appStore.showFishDialog" class="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4">
     <div class="bg-card border border-border rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
       <div class="p-4 border-b border-border flex justify-between items-center">
         <div class="flex items-center gap-2">
