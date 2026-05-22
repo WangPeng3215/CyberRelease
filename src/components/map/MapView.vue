@@ -43,18 +43,11 @@ function initMap() {
 }
 
 function addBaseMap() {
-  const darkBaseLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; CartoDB',
-    maxZoom: 19
+  const terrainBaseLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap',
+    maxZoom: 17
   })
-  map.addLayer(darkBaseLayer)
-
-  const tiandituLabelLayer = new mars2d.layer.TdtLayer({
-    type: 'cia',
-    name: '标注',
-    opacity: 0.6
-  })
-  map.addLayer(tiandituLabelLayer)
+  map.addLayer(terrainBaseLayer)
 }
 
 function createWaterIcon(water) {
@@ -169,7 +162,7 @@ function addMapOverlay() {
   right: 0;
   bottom: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 0%, rgba(7, 16, 24, 0.7) 100%);
+  background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
   z-index: 1000;
 }
 
