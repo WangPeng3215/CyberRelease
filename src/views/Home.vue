@@ -1,12 +1,28 @@
 <script setup>
+import { useRouter } from 'vue-router'
 import MapView from '@/components/map/MapView.vue'
 import RightInfoPanel from '@/components/panels/RightInfoPanel.vue'
 import RankPanel from '@/components/panels/RankPanel.vue'
 import EventPanel from '@/components/panels/EventPanel.vue'
 import FishDialog from '@/components/dialogs/FishDialog.vue'
 import { useAppStore } from '@/store/app'
+import { useAuthStore } from '@/store/auth'
 
+const router = useRouter()
 const appStore = useAppStore()
+const authStore = useAuthStore()
+
+function getMeritTitle(level) {
+  if (level >= 50) return '电子如来'
+  if (level >= 20) return '海鲜供应商'
+  if (level >= 10) return '赛博龙王'
+  if (level >= 5) return '网络观音'
+  return '电子善人'
+}
+
+async function handleSignOut() {
+  await authStore.logout()
+}
 </script>
 
 <template>
@@ -33,19 +49,34 @@ const appStore = useAppStore()
         </div>
       </div>
       
-      <div class="flex items-center gap-4 bg-card border border-border rounded-xl px-4 py-2">
-        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-xl">
-          🧑‍💻
-        </div>
-        <div class="hidden sm:block">
-          <div class="text-white font-medium">电子观音007</div>
-          <div class="flex items-center gap-2 text-xs">
-            <span class="text-gray-400">功德值: </span>
-            <span class="text-highlight font-bold">{{ appStore.userMerit.toLocaleString() }}</span>
-            <span class="text-primary font-semibold">{{ appStore.userLevel }}</span>
-            <span class="text-yellow-400">{{ appStore.userTitle }}</span>
+      <div class="flex items-center gap-4">
+        <div v-if="authStore.user" class="flex items-center gap-4 bg-card border border-border rounded-xl px-4 py-2">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-xl">
+            🧑‍💻
           </div>
+          <div class="hidden sm:block">
+            <div class="text-white font-medium">{{ authStore.userData?.nickname || '用户' }}</div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="text-gray-400">功德值: </span>
+              <span class="text-highlight font-bold">{{ authStore.userData?.merit_points?.toLocaleString() || 0 }}</span>
+              <span class="text-primary font-semibold">Lv.{{ authStore.userData?.merit_level || 1 }}</span>
+              <span class="text-yellow-400">{{ getMeritTitle(authStore.userData?.merit_level || 1) }}</span>
+            </div>
+          </div>
+          <button
+            @click="handleSignOut"
+            class="px-3 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg text-sm transition-colors"
+          >
+            退出
+          </button>
         </div>
+        <button
+          v-else
+          @click="router.push('/auth')"
+          class="px-4 py-2 bg-primary hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+        >
+          登录/注册
+        </button>
       </div>
     </header>
     
