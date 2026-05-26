@@ -1,27 +1,33 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
 import MapView from '@/components/map/MapView.vue'
 import RightInfoPanel from '@/components/panels/RightInfoPanel.vue'
 import RankPanel from '@/components/panels/RankPanel.vue'
 import EventPanel from '@/components/panels/EventPanel.vue'
 import FishDialog from '@/components/dialogs/FishDialog.vue'
+import FishCatalogModal from '@/components/catalog/FishCatalogModal.vue'
 import { useAppStore } from '@/store/app'
 import { useAuthStore } from '@/store/auth'
+import { useFishCatalogStore } from '@/store/fishCatalog'
 
 const router = useRouter()
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const fishCatalogStore = useFishCatalogStore()
 
-function getMeritTitle(level) {
-  if (level >= 50) return '电子如来'
-  if (level >= 20) return '海鲜供应商'
-  if (level >= 10) return '赛博龙王'
-  if (level >= 5) return '网络观音'
-  return '电子善人'
-}
+const isCatalogOpen = ref(false)
+
+onMounted(() => {
+  fishCatalogStore.loadCatalog()
+})
 
 async function handleSignOut() {
   await authStore.logout()
+}
+
+function openCatalog() {
+  isCatalogOpen.value = true
 }
 </script>
 
@@ -43,7 +49,12 @@ async function handleSignOut() {
           <button class="px-4 py-2 bg-primary text-white rounded-lg font-medium">首页</button>
           <button class="px-4 py-2 text-gray-400 hover:text-white transition-colors">生态监测</button>
           <button class="px-4 py-2 text-gray-400 hover:text-white transition-colors">功德排行榜</button>
-          <button class="px-4 py-2 text-gray-400 hover:text-white transition-colors">鱼类图鉴</button>
+          <button @click="openCatalog" class="px-4 py-2 text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+            🐠 鱼类图鉴
+            <span v-if="fishCatalogStore.unlockedCount > 0" class="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded-full">
+              {{ fishCatalogStore.unlockedCount }}/{{ fishCatalogStore.totalFishCount }}
+            </span>
+          </button>
           <button class="px-4 py-2 text-gray-400 hover:text-white transition-colors">生态事件</button>
           <button class="px-4 py-2 text-gray-400 hover:text-white transition-colors">关于我们</button>
         </div>
@@ -58,9 +69,9 @@ async function handleSignOut() {
             <div class="text-white font-medium">{{ authStore.userData?.nickname || '用户' }}</div>
             <div class="flex items-center gap-2 text-xs">
               <span class="text-gray-400">功德值: </span>
-              <span class="text-highlight font-bold">{{ authStore.userData?.merit_points?.toLocaleString() || 0 }}</span>
-              <span class="text-primary font-semibold">Lv.{{ authStore.userData?.merit_level || 1 }}</span>
-              <span class="text-yellow-400">{{ getMeritTitle(authStore.userData?.merit_level || 1) }}</span>
+              <span class="text-highlight font-bold">{{ appStore.getCurrentUserMerit().toLocaleString() }}</span>
+              <span class="text-primary font-semibold">{{ appStore.getCurrentUserLevel() }}</span>
+              <span class="text-yellow-400">{{ appStore.getCurrentUserTitle() }}</span>
             </div>
           </div>
           <button
@@ -80,26 +91,36 @@ async function handleSignOut() {
       </div>
     </header>
     
-    <main class="flex-1 flex overflow-hidden p-4 gap-4">
-      <div class="flex-1 rounded-xl overflow-hidden border border-border">
+    <main class="flex-1 flex overflow-hidden px-4 pt-4 gap-4">
+      <div class="flex-1 rounded-xl overflow-hidden border border-border relative">
         <MapView />
+        
+        <!-- 放生动画 -->
+        <div v-if="appStore.showReleaseAnimation" 
+             class="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+          <div class="text-center animate-pulse">
+            <div class="text-8xl mb-4">{{ appStore.releasingFish?.fish.emoji }}</div>
+            <div class="text-2xl text-white font-bold mb-2">放生成功！</div>
+            <div class="text-cyan-400 text-xl">功德 +{{ appStore.releasingFish?.fish.merit * appStore.releasingFish?.count }}</div>
+          </div>
+        </div>
       </div>
       
       <div class="w-80 flex flex-col gap-4 shrink-0">
-        <div class="h-1/2">
+        <div class="flex-1 min-h-0">
           <RightInfoPanel />
         </div>
-        <div class="flex-1">
+        <div class="flex-1 min-h-0">
           <EventPanel />
         </div>
       </div>
     </main>
     
-    <footer class="h-48 px-4 pb-4 shrink-0">
+    <footer class="h-56 px-4 py-4 shrink-0">
       <div class="flex gap-4 h-full">
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <div class="w-full h-full bg-card border border-border rounded-xl p-4 flex flex-col">
-            <div class="flex justify-between items-center mb-3">
+            <div class="flex justify-between items-center mb-3 shrink-0">
               <div class="flex items-center gap-2">
                 <span class="text-xl">📰</span>
                 <span class="text-white font-semibold">生态事件</span>
@@ -107,16 +128,17 @@ async function handleSignOut() {
               <button class="text-gray-400 hover:text-white text-sm">更多 ></button>
             </div>
             
-            <div class="flex-1 overflow-y-auto space-y-2">
+            <div class="flex-1 overflow-y-auto space-y-2 min-h-0">
               <div v-for="(event, index) in appStore.eventsData" :key="index"
                    class="flex items-center gap-3 p-2 rounded hover:bg-gray-800/50 transition-colors">
                 <span class="text-gray-400 text-sm w-12 shrink-0">{{ event.time }}</span>
-                <span class="text-gray-300 text-sm flex-1">{{ event.content }}</span>
+                <span class="text-gray-300 text-sm flex-1 min-w-0 truncate">{{ event.content }}</span>
                 <span :class="[
-                  'px-2 py-0.5 rounded text-xs font-medium',
+                  'px-2 py-0.5 rounded text-xs font-medium shrink-0',
                   event.tag === '事件' ? 'bg-purple-500/30 text-purple-400' :
                   event.tag === '生态' ? 'bg-green-500/30 text-green-400' :
                   event.tag === '稀有' ? 'bg-orange-500/30 text-orange-400' :
+                  event.tag === '放生' ? 'bg-cyan-500/30 text-cyan-400' :
                   'bg-gray-600/30 text-gray-400'
                 ]">
                   {{ event.tag }}
@@ -126,13 +148,13 @@ async function handleSignOut() {
           </div>
         </div>
         
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <RankPanel />
         </div>
         
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <div class="w-full h-full bg-card border border-border rounded-xl p-4 flex flex-col">
-            <div class="flex justify-between items-center mb-3">
+            <div class="flex justify-between items-center mb-3 shrink-0">
               <div class="flex items-center gap-2">
                 <span class="text-xl">📊</span>
                 <span class="text-white font-semibold">生态报告</span>
@@ -140,12 +162,12 @@ async function handleSignOut() {
               <button class="text-gray-400 hover:text-white text-sm">更多 ></button>
             </div>
             
-            <div class="flex-1 flex items-center justify-center">
-              <div class="text-center">
+            <div class="flex-1 flex items-center justify-center relative overflow-hidden min-h-0">
+              <div class="text-center z-10">
                 <div class="text-gray-400 mb-2">《2026电子生态月度报告》</div>
                 <div class="text-gray-500 text-sm mb-4">本月全球放生总量突破</div>
                 <div class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-highlight mb-4">
-                  2,514,514
+                  {{ appStore.todayReleaseCount.toLocaleString() }}
                 </div>
                 <div class="text-sm text-gray-400">条</div>
                 
@@ -161,7 +183,7 @@ async function handleSignOut() {
                 </div>
               </div>
               
-              <div class="absolute right-8 top-1/2 -translate-y-1/2 text-8xl opacity-20">
+              <div class="absolute right-8 top-1/2 -translate-y-1/2 text-8xl opacity-10">
                 🐟
               </div>
             </div>
@@ -171,5 +193,6 @@ async function handleSignOut() {
     </footer>
     
     <FishDialog />
+    <FishCatalogModal v-model="isCatalogOpen" />
   </div>
 </template>
